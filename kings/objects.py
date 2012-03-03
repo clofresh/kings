@@ -1,4 +1,5 @@
 import os
+from copy import deepcopy
 from glob import glob
 
 import yaml
@@ -8,22 +9,15 @@ from .common import *
 class ObjectNotFound(Exception): pass
 class LocationNotFound(ObjectNotFound): pass
 
-def from_yaml(filename):
-    data = yaml.load(open(filename))
-    cls = globals()[data['type']]
-    return cls.init(**data)
 
 class Db(object):
     _instance = None
 
     @classmethod
     def init(cls, config):
-        obj_db = cls()
+        obj_db = cls(config.get('kings', 'content_path'))
         cls._instance = obj_db
-        content_path = config.get('kings', 'content_path')
-        files = glob(os.path.join(content_path, '*.yaml'))
-        for filename in files:
-            from_yaml(filename)
+        obj_db.reload()
         return obj_db
 
     @classmethod
@@ -31,11 +25,24 @@ class Db(object):
         assert cls._instance
         return cls._instance
 
-    def __init__(self, objects=None):
+    def __init__(self, content_path, objects=None):
+        self.content_path = content_path
         self.objects = objects or {}
 
     def __contains__(self, oid):
         return oid in self.objects
+
+    def reload(self):
+        for filename in glob(os.path.join(self.content_path, '*.yaml')):
+            self.from_yaml(filename=filename)
+
+    def from_yaml(self, oid=None, filename=None):
+        assert oid or filename and not (oid and filename)
+        if oid:
+            filename = "{0}/{1}.yaml".format(self.content_path, oid)
+        data = yaml.load(open(filename))
+        cls = globals()[data['type']]
+        return cls.init(**data)
 
     def add(self, obj):
         assert obj.oid
@@ -66,11 +73,30 @@ class Db(object):
 
 
 class Object(object):
+    instance_counter = 0
+
     @classmethod
     def init(cls, **kwargs):
         obj = cls(**kwargs)
         Db.instance().add(obj)
         return obj
+
+    @classmethod
+    def clone(cls, oid):
+        db = Db.instance()
+        try:
+            prototype = db.get(oid)
+        except ObjectNotFound:
+            prototype = db.from_yaml(oid=oid)
+        cloned = deepcopy(prototype)
+
+        # Make sure that the cone has a unique oid
+        cls.instance_counter += 1
+        instance_num = cls.instance_counter
+        cloned._oid = "{0}:{1}".format(cloned.oid, instance_num)
+
+        db.add(cloned)
+        return cloned
 
     def __init__(self, oid=None, short_desc=None, long_desc=None, location_oid=None, **kwargs):
         self._oid = oid
@@ -104,11 +130,11 @@ class Object(object):
         else:
             return None
 
-    def move(self, oid):
-        if oid in Db.instance():
-            self._location_oid = oid
+    def move_to(self, target_oid):
+        if target_oid in Db.instance():
+            self._location_oid = target_oid
         else:
-            raise LocationNotFound(oid)
+            raise LocationNotFound(target_oid)
 
     def __repr__(self):
         return '{0}(**{1})'.format(self.__class__.__name__, self.__dict__)
@@ -125,6 +151,10 @@ class Player(Object):
             return repr(Db.instance().objects)
         elif verb == "look":
             return self.look(self.location())
+        elif verb == "spawn":
+            thing = Npc.clone('mouse')
+            thing._location_oid = self.location_oid
+            return ""
         elif verb == "exit":
             self.running = False
             return "Goodbye"
@@ -133,7 +163,7 @@ class Player(Object):
             exits = room.exits
             if verb in exits:
                 try:
-                    self.move(exits[verb])
+                    self.move_to(exits[verb])
                 except LocationNotFound:
                     return "Oops, location not found"
                 else:
@@ -157,11 +187,16 @@ class Player(Object):
 
         return "\n".join(output)
 
+class Npc(Object):
+    pass
 
 class Location(Object):
-    def __init__(self, exits=None, **kwargs):
+    def __init__(self, exits=None, npcs=None, **kwargs):
         super(Location, self).__init__(**kwargs)
         self._exits = exits or {}
+        for npc_oid in npcs or []:
+            cloned = Npc.clone(npc_oid)
+            cloned._location_oid = self.oid
 
     @property
     def exits(self):

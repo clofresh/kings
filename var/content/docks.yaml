@@ -5,3 +5,5 @@ long_desc: >
   The smell of fish overwhelms you as you approach Nanook's docks. 
 exits:
     south: town_square
+npcs:
+    - mouse
