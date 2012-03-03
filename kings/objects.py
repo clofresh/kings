@@ -53,6 +53,18 @@ class Db(object):
         except KeyError:
             raise ObjectNotFound(oid)
 
+    def query(self, **kwargs):
+        objs = []
+        for obj in self.objects.values():
+            for key, val in kwargs.items():
+                if getattr(obj, key) != val:
+                    break
+            else:
+                objs.append(obj)
+
+        return objs
+
+
 class Object(object):
     @classmethod
     def init(cls, **kwargs):
@@ -99,14 +111,21 @@ class Object(object):
         else:
             raise LocationNotFound(oid)
 
+    def __repr__(self):
+        return '{0}(**{1})'.format(self.__class__.__name__, self.__dict__)
+
 class Player(Object):
+    @property
+    def short_desc(self):
+        return self.oid
+
     def interpret(self, line):
         sep = " "
         verb, sep, rest = line.partition(sep)
         if verb == "ls":
             return repr(Db.instance().objects)
         elif verb == "look":
-            return self.location.long_desc
+            return self.look(self.location)
         elif verb == "exit":
             self.running = False
             return "Goodbye"
@@ -119,37 +138,31 @@ class Player(Object):
                 except LocationNotFound:
                     return "Oops, location not found"
                 else:
-                    return self.location.long_desc
+                    return self.look(self.location)
         return "I don't know what {0} means".format(verb)
 
-    def run(self, conn):
-        self.running = True
-        try:
-            while self.running:
-                line = conn.readline()
-                if line:
-                    output = self.interpret(line.strip())
-                    conn.write(output + "\n% ")
-                    conn.flush()
-                    log.info("echoed %r" % line)
-                else:
-                    self.running = False
-        finally:
-            log.info("client disconnected")
-            Db.instance().remove(self)
+    def close(self):
+        Db.instance().remove(self)
+
+    def look(self, obj):
+        output = [obj.long_desc]
+        if obj.exits:
+            exits = "Exits: {0}".format(", ".join(sorted(obj.exits.keys())))
+        else:
+            exits = "There are no obvious exists"
+        output.append(exits)
+        
+        things = Db.instance().query(location_oid=self.location_oid)
+        if things:
+            output.extend([t.short_desc for t in things if t.oid != self.oid])
+
+        return "\n".join(output)
+
 
 class Location(Object):
     def __init__(self, exits=None, **kwargs):
         super(Location, self).__init__(**kwargs)
         self._exits = exits or {}
-
-    @property
-    def long_desc(self):
-        if self._exits:
-            exits = "Exits: {0}".format(", ".join(sorted(self._exits.keys())))
-        else:
-            exits = "There are no obvious exists"
-        return "{0}\n{1}".format(self._long_desc, exits)
 
     @property
     def exits(self):
