@@ -1,0 +1,7 @@
+oid: docks
+type: Location
+short_desc: The docks.
+long_desc: >
+  The smell of fish overwhelms you as you approach Nanook's docks. 
+exits:
+    south: town_square

@@ -1,0 +1,10 @@
+oid: town_square
+type: Location
+short_desc: A bustling town square.
+long_desc: >
+  You enter a bustling town square filled with the warm and energy of Nanook. 
+exits:
+    north: docks
+    south: residential_area
+    east:  waterfront
+    west:  cliffs
