@@ -35,7 +35,7 @@ def connect(socket, address):
 
     player.running = True
     prompt = "\n% "
-    conn.write(player.look(player.location) + prompt)
+    conn.write(player.look(player.location()) + prompt)
     conn.flush()
     try:
         while player.running:

@@ -94,7 +94,6 @@ class Object(object):
     def location_oid(self):
         return self._location_oid
 
-    @property
     def location(self):
         if self.location_oid:
             try:
@@ -125,12 +124,12 @@ class Player(Object):
         if verb == "ls":
             return repr(Db.instance().objects)
         elif verb == "look":
-            return self.look(self.location)
+            return self.look(self.location())
         elif verb == "exit":
             self.running = False
             return "Goodbye"
         else:
-            room = self.location
+            room = self.location()
             exits = room.exits
             if verb in exits:
                 try:
@@ -138,7 +137,7 @@ class Player(Object):
                 except LocationNotFound:
                     return "Oops, location not found"
                 else:
-                    return self.look(self.location)
+                    return self.look(self.location())
         return "I don't know what {0} means".format(verb)
 
     def close(self):
@@ -151,7 +150,7 @@ class Player(Object):
         else:
             exits = "There are no obvious exists"
         output.append(exits)
-        
+
         things = Db.instance().query(location_oid=self.location_oid)
         if things:
             output.extend([t.short_desc for t in things if t.oid != self.oid])
