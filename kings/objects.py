@@ -3,6 +3,7 @@ from copy import deepcopy
 from glob import glob
 
 import yaml
+from gevent.queue import Queue
 
 from .common import *
 
@@ -104,6 +105,9 @@ class Object(object):
         self._long_desc = long_desc
         self._location_oid = location_oid
 
+    def __eq__(self, other):
+        return self.oid == other.oid
+
     @property
     def oid(self):
         return self._oid
@@ -140,6 +144,10 @@ class Object(object):
         return '{0}(**{1})'.format(self.__class__.__name__, self.__dict__)
 
 class Player(Object):
+    def __init__(self, **kwargs):
+        super(Player, self).__init__(**kwargs)
+        self.messages = Queue()
+
     @property
     def short_desc(self):
         return self.oid
@@ -147,23 +155,26 @@ class Player(Object):
     def interpret(self, line):
         sep = " "
         verb, sep, rest = line.partition(sep)
+        output = "I don't know what {0} means".format(verb)
         if verb == "ls":
-            return repr(Db.instance().objects)
+            output = repr(Db.instance().objects)
         elif verb == "look":
             if rest:
                 try:
-                    return self.look(Db.instance().get(rest))
+                    output =  self.look(Db.instance().get(rest))
                 except ObjectNotFound:
-                    return "There's no \"{0}\" here.".format(rest)
+                    output = "There's no \"{0}\" here.".format(rest)
             else:
-                return self.look(self.location())
+                output = self.look(self.location())
         elif verb == "spawn":
             thing = Npc.clone('mouse')
             thing._location_oid = self.location_oid
-            return ""
         elif verb == "exit":
             self.running = False
-            return "Goodbye"
+            output = "Goodbye"
+        elif verb == "say":
+            self.say(rest)
+            output = None
         else:
             room = self.location()
             exits = room.exits
@@ -171,10 +182,12 @@ class Player(Object):
                 try:
                     self.move_to(exits[verb])
                 except LocationNotFound:
-                    return "Oops, location not found"
+                    output = "Oops, location not found"
                 else:
-                    return self.look(self.location())
-        return "I don't know what {0} means".format(verb)
+                    output = self.look(self.location())
+
+        if output:
+            self.messages.put([output])
 
     def close(self):
         Db.instance().remove(self)
@@ -194,6 +207,9 @@ class Player(Object):
 
         return "\n".join(output)
 
+    def say(self, message):
+        self.location().broadcast(self, message)
+
 class Npc(Object):
     pass
 
@@ -208,4 +224,16 @@ class Location(Object):
     @property
     def exits(self):
         return self._exits
+
+    def contents(self):
+        return Db.instance().query(location_oid=self.oid)
+
+    def broadcast(self, sender, message):
+        for obj in self.contents():
+            if hasattr(obj, 'messages'):
+                if obj == sender:
+                    obj.messages.put(['You say: "{0}"'.format(message)])
+                else:
+                    obj.messages.put(['{0} says: "{1}"'.format(sender.oid, message)])
+
 

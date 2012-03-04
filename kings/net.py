@@ -1,4 +1,6 @@
 from .objects import Db, Player
+import gevent.queue
+import gevent.socket
 from gevent.server import StreamServer
 
 from .common import *
@@ -21,6 +23,7 @@ class MUD(object):
         except KeyboardInterrupt:
             log.info("Received KeyboardInterrupt, exiting")
 
+class NoInput(Exception): pass
 
 # Runs in its own greenlet
 def connect(socket, address):
@@ -39,13 +42,20 @@ def connect(socket, address):
     conn.flush()
     try:
         while player.running:
-            line = conn.readline().strip()
-            if line:
-                output = player.interpret(line)
-                conn.write(output + prompt)
-                conn.flush()
+            try:
+                gevent.socket.wait_read(conn.fileno(), timeout=0.01, timeout_exc=NoInput())
+            except NoInput:
+                pass
             else:
-                player.running = False
+                line = conn.readline().strip()
+                if line:
+                    player.interpret(line)
+            try:
+                messages = player.messages.get(block=True, timeout=0.01)
+                conn.write('\n'.join(messages + ["% "]))
+                conn.flush()
+            except gevent.queue.Empty:
+                pass
     finally:
         log.info("client disconnected")
         player.close()
