@@ -150,7 +150,13 @@ class Player(Object):
         if verb == "ls":
             return repr(Db.instance().objects)
         elif verb == "look":
-            return self.look(self.location())
+            if rest:
+                try:
+                    return self.look(Db.instance().get(rest))
+                except ObjectNotFound:
+                    return "There's no \"{0}\" here.".format(rest)
+            else:
+                return self.look(self.location())
         elif verb == "spawn":
             thing = Npc.clone('mouse')
             thing._location_oid = self.location_oid
@@ -175,15 +181,16 @@ class Player(Object):
 
     def look(self, obj):
         output = [obj.long_desc]
-        if obj.exits:
-            exits = "Exits: {0}".format(", ".join(sorted(obj.exits.keys())))
-        else:
-            exits = "There are no obvious exists"
-        output.append(exits)
+        if hasattr(obj, "exits"):
+            if obj.exits:
+                exits = "Exits: {0}".format(", ".join(sorted(obj.exits.keys())))
+            else:
+                exits = "There are no obvious exists"
+            output.append(exits)
 
-        things = Db.instance().query(location_oid=self.location_oid)
-        if things:
-            output.extend([t.short_desc for t in things if t.oid != self.oid])
+            things = Db.instance().query(location_oid=self.location_oid)
+            if things:
+                output.extend([t.short_desc for t in things if t.oid != self.oid])
 
         return "\n".join(output)
 
