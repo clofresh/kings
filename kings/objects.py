@@ -105,6 +105,15 @@ class Object(object):
         self._long_desc = long_desc
         self._location_oid = location_oid
 
+    def __repr__(self):
+        return '{0}(**{1})'.format(self.__class__.__name__, self.__dict__)
+
+    def __ror__(self, action):
+        ''' We define the | (pipe) operator as "send message to"
+        '''
+        if hasattr(self, 'actions'):
+            self.actions.put(action)
+
     def __eq__(self, other):
         return self.oid == other.oid
 
@@ -124,6 +133,15 @@ class Object(object):
     def location_oid(self):
         return self._location_oid
 
+    @location_oid.setter
+    def location_oid(self, val):
+        try:
+            location = Db.instance().get(oid=val)
+        except ObjectNotFound:
+            raise LocationNotFound(val)
+        else:
+            self._location_oid = val
+
     def location(self):
         if self.location_oid:
             try:
@@ -140,13 +158,119 @@ class Object(object):
         else:
             raise LocationNotFound(target_oid)
 
-    def __repr__(self):
-        return '{0}(**{1})'.format(self.__class__.__name__, self.__dict__)
+    def killable(self, by):
+        return False
+
+
+class Action(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def execute(self):
+        raise NotImplementedError()
+
+class MessageAction(Action):
+    def __init__(self, message):
+        self.message = message
+
+    def execute(self):
+        return self.message
+
+class LookAction(Action):
+    def __init__(self, observer, to_observe):
+        self.observer = observer
+        self.to_observe = to_observe
+
+    def execute(self):
+        try:
+            if self.observer.location_oid == self.to_observe:
+                obj = Db.instance().get(self.to_observe)
+            else:
+                obj = Db.instance().query(oid=self.to_observe, location_oid=self.observer.location_oid)[0]
+
+            output = [obj.long_desc]
+            if hasattr(obj, "exits"):
+                if obj.exits:
+                    exits = "Exits: {0}".format(", ".join(sorted(obj.exits.keys())))
+                else:
+                    exits = "There are no obvious exists"
+                output.append(exits)
+
+                things = Db.instance().query(location_oid=self.observer.location_oid)
+                if things:
+                    output.extend([t.short_desc for t in things if t.oid != self.observer.oid])
+
+            return "\n".join(output)
+        except ObjectNotFound:
+            return "There's no \"{0}\" here.".format(self.to_observe)
+
+class MoveAction(Action):
+    def __init__(self, mover, destination_oid):
+        self.mover = mover
+        self.destination_oid = destination_oid
+
+    def execute(self):
+        try:
+            self.mover.location_oid = self.destination_oid
+        except LocationNotFound:
+            return 'Oops, could not find "{0}"'.format(self.destination_oid)
+        else:
+            return LookAction(self.mover, self.destination_oid).execute()
+
+class SayAction(Action):
+    def __init__(self, sayer, message):
+        self.sayer = sayer
+        self.message = message
+
+    def execute(self):
+        location = self.sayer.location()
+
+        for obj in location.contents():
+            if obj != self.sayer:
+                '{0} says: "{1}"'.format(self.sayer.oid, self.message) | obj
+
+        return 'You say: "{0}"'.format(self.message)
+
+class AttackAction(Action):
+    def __init__(self, attacker, target):
+        self.attacker = attacker
+        self.target = target
+
+    def execute(self):
+        location = self.attacker.location()
+        try:
+            target = Db.instance().query(oid=self.target, location_oid=location.oid)[0]
+        except (ObjectNotFound, IndexError):
+            return 'There is no "{0}" here'.format(self.target)
+        else:
+            for obj in location.contents():
+                if obj != self.attacker:
+                    '{0} starts to fight {1}'.format(self.attacker.oid, target.oid) | obj
+
+            return 'You start to fight {0}'.format(target.oid)
+
+class ExitAction(Action):
+    def __init__(self, to_exit, message):
+        self.to_exit = to_exit
+        self.message = message
+
+    def execute(self):
+        self.to_exit.running = False
+        return self.message
 
 class Player(Object):
-    def __init__(self, **kwargs):
+    @classmethod
+    def init(cls, **kwargs):
+        kwargs['running'] = True
+        player = super(Player, cls).init(**kwargs)
+        LookAction(player, player.location_oid) | player 
+        return player
+
+    def __init__(self, running=False, **kwargs):
         super(Player, self).__init__(**kwargs)
-        self.messages = Queue()
+        self.running = running
+        self.prompt = "\n% "
+        self.actions = Queue()
 
     @property
     def short_desc(self):
@@ -155,63 +279,43 @@ class Player(Object):
     def interpret(self, line):
         sep = " "
         verb, sep, rest = line.partition(sep)
-        output = "I don't know what {0} means".format(verb)
+        action = None
+
         if verb == "ls":
-            output = repr(Db.instance().objects)
+            action = repr(Db.instance().objects)
         elif verb == "look":
             if rest:
-                try:
-                    output =  self.look(Db.instance().get(rest))
-                except ObjectNotFound:
-                    output = "There's no \"{0}\" here.".format(rest)
+                action = LookAction(rest)
             else:
-                output = self.look(self.location())
-        elif verb == "spawn":
-            thing = Npc.clone('mouse')
-            thing._location_oid = self.location_oid
+                action = LookAction(self, self.location_oid)
         elif verb == "exit":
-            self.running = False
-            output = "Goodbye"
+            action = ExitAction(self, "Goodbye")
         elif verb == "say":
-            self.say(rest)
-            output = None
+            action = SayAction(self, rest)
+        elif verb == "kill":
+            action = AttackAction(self, rest)
         else:
             room = self.location()
             exits = room.exits
             if verb in exits:
-                try:
-                    self.move_to(exits[verb])
-                except LocationNotFound:
-                    output = "Oops, location not found"
-                else:
-                    output = self.look(self.location())
+                action = MoveAction(self, exits[verb])
 
-        if output:
-            self.messages.put([output])
+        if action is None:
+            return 'I don\'t know what "{0}" means'.format(verb)
+        return action
 
     def close(self):
         Db.instance().remove(self)
 
-    def look(self, obj):
-        output = [obj.long_desc]
-        if hasattr(obj, "exits"):
-            if obj.exits:
-                exits = "Exits: {0}".format(", ".join(sorted(obj.exits.keys())))
-            else:
-                exits = "There are no obvious exists"
-            output.append(exits)
-
-            things = Db.instance().query(location_oid=self.location_oid)
-            if things:
-                output.extend([t.short_desc for t in things if t.oid != self.oid])
-
-        return "\n".join(output)
-
-    def say(self, message):
-        self.location().broadcast(self, message)
+    def kill(self, obj):
+        if obj.killable(self):
+            self.location().kill(self, obj)
+        else:
+            "Can't kill {0}".format(obj.oid) | self
 
 class Npc(Object):
-    pass
+    def killable(self, by):
+        return self.location_oid == by.location_oid
 
 class Location(Object):
     def __init__(self, exits=None, npcs=None, **kwargs):
@@ -227,13 +331,4 @@ class Location(Object):
 
     def contents(self):
         return Db.instance().query(location_oid=self.oid)
-
-    def broadcast(self, sender, message):
-        for obj in self.contents():
-            if hasattr(obj, 'messages'):
-                if obj == sender:
-                    obj.messages.put(['You say: "{0}"'.format(message)])
-                else:
-                    obj.messages.put(['{0} says: "{1}"'.format(sender.oid, message)])
-
 

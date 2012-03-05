@@ -1,4 +1,4 @@
-from .objects import Db, Player
+from .objects import Db, Player, LookAction
 import gevent.queue
 import gevent.socket
 from gevent.server import StreamServer
@@ -35,13 +35,9 @@ def connect(socket, address):
 
     # FIXME: add auth
     player = Player.init(oid=username, location_oid="town_square")
-
-    player.running = True
-    prompt = "\n% "
-    conn.write(player.look(player.location()) + prompt)
-    conn.flush()
     try:
         while player.running:
+            action = None
             try:
                 gevent.socket.wait_read(conn.fileno(), timeout=0.01, timeout_exc=NoInput())
             except NoInput:
@@ -49,13 +45,21 @@ def connect(socket, address):
             else:
                 line = conn.readline().strip()
                 if line:
-                    player.interpret(line)
-            try:
-                messages = player.messages.get(block=True, timeout=0.01)
-                conn.write('\n'.join(messages + ["% "]))
+                    action = player.interpret(line)
+
+            if not action:
+                try:
+                    action = player.actions.get(block=True, timeout=0.01)
+                except gevent.queue.Empty:
+                    pass
+
+            if action:
+                # If it's just a string, print it out
+                func = getattr(action, 'execute', lambda: str(action))
+                message = func()
+                conn.write(message + player.prompt)
                 conn.flush()
-            except gevent.queue.Empty:
-                pass
+
     finally:
         log.info("client disconnected")
         player.close()
