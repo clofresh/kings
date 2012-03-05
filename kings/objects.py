@@ -3,6 +3,7 @@ from copy import deepcopy
 from glob import glob
 
 import yaml
+import gevent
 from gevent.queue import Queue
 
 from .common import *
@@ -231,7 +232,7 @@ class SayAction(Action):
 
         return 'You say: "{0}"'.format(self.message)
 
-class AttackAction(Action):
+class KillAction(Action):
     def __init__(self, attacker, target):
         self.attacker = attacker
         self.target = target
@@ -247,7 +248,31 @@ class AttackAction(Action):
                 if obj != self.attacker:
                     '{0} starts to fight {1}'.format(self.attacker.oid, target.oid) | obj
 
+            self.attacker.attack(target)
+            target.attack(self.attacker)
+
             return 'You start to fight {0}'.format(target.oid)
+
+class AttackAction(Action):
+    def __init__(self, attacker, target):
+        self.attacker = attacker
+        self.target = target
+
+    def execute(self):
+        if self.attacker.location_oid == self.target.location_oid:
+            damage = 1
+            self.target.hp -= damage
+            if self.target.hp < 0:
+                return "You have died."
+            else:
+                greenlet = gevent.Greenlet(self.requeue)
+                greenlet.start_later(2)
+                return "{0} hit you for {1}hp ({2}hp left).".format(self.attacker.oid, damage, self.target.hp)
+        else:
+            return "{0} stopped attacking you.".format(self.attacker.oid)
+
+    def requeue(self):
+        self.attacker.attack(self.target)
 
 class ExitAction(Action):
     def __init__(self, to_exit, message):
@@ -270,6 +295,7 @@ class Player(Object):
         super(Player, self).__init__(**kwargs)
         self.running = running
         self.prompt = "\n% "
+        self.hp = 20
         self.actions = Queue()
 
     @property
@@ -293,7 +319,7 @@ class Player(Object):
         elif verb == "say":
             action = SayAction(self, rest)
         elif verb == "kill":
-            action = AttackAction(self, rest)
+            action = KillAction(self, rest)
         else:
             room = self.location()
             exits = room.exits
@@ -304,16 +330,20 @@ class Player(Object):
             return 'I don\'t know what "{0}" means'.format(verb)
         return action
 
+    def attack(self, target):
+        AttackAction(self, target) | target
+
     def close(self):
         Db.instance().remove(self)
 
-    def kill(self, obj):
-        if obj.killable(self):
-            self.location().kill(self, obj)
-        else:
-            "Can't kill {0}".format(obj.oid) | self
-
 class Npc(Object):
+    def __init__(self, **kwargs):
+        super(Npc, self).__init__(**kwargs)
+        self.hp = 5
+
+    def attack(self, target):
+        AttackAction(self, target) | target
+
     def killable(self, by):
         return self.location_oid == by.location_oid
 
