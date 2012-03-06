@@ -1,0 +1,5 @@
+oid: bird
+type: Npc
+short_desc: A tiny bird.
+long_desc: >
+  You see a tiny bird.  It's chirping happily. 

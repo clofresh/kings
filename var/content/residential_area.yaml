@@ -1,0 +1,11 @@
+oid: residential_area
+type: Location
+short_desc: A quiet residential area.
+long_desc: >
+  You enter quiet residential area where the citizens of Nanook live and sleep.  Some children are happily at play, inspite of the chill air. 
+exits:
+    north: town_square
+npcs:
+    - child
+    - child
+    - child
