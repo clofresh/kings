@@ -1,0 +1,15 @@
+oid: west_docks
+type: Location
+short_desc: The docks.
+long_desc: >
+  You are in the western part of the docks.  The road continues to the east where you see a tiny park.  The north appears to be untraversible due to the dilapidated docks which appear to be slowly falling into the rocky water below.
+  To the west, a few fishermen are telling fish tales to each other at the door of a large bait and tackle shop.  Next to the shop is a large warehouse where several workers haul crates filled with fish.  A small alley separates the two.   
+  You also hear faint singing and laughter coming from a busy, nearby tavern.  Beyond that is a small distillery with several tall chimneys that continously release plumes of steam.  The road goes further south beyond that to an intersection in front of a wide building.
+
+exits:
+    east:  docks_park_road
+    west:  west_docks_alley
+    south:  cliffs
+    tavern:  west_docks_tavern
+    shop:  west_docks_bait_shop
+    warehouse:  west_docks_warehouse

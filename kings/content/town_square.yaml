@@ -2,7 +2,7 @@ oid: town_square
 type: Location
 short_desc: A bustling town square.
 long_desc: >
-  You enter a bustling town square filled with the warm and energy of Nanook. 
+  You enter a bustling town square filled with the warm and energy of Nanook.  The strong odor of fish wafts in from the north where you can see the docks.  To the east, you hear the faint crash of waves against rocks.  Looking south, you see three large structures rise above several smaller residences.  A slight breeze blows in from the west carrying the cries of several birds.
 exits:
     north: docks
     south: residential_area

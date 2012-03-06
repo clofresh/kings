@@ -1,0 +1,15 @@
+oid: small_park
+type: Location
+short_desc: A small park.
+long_desc: >
+  You are standing in a small, treeless park.  It's surrouned on all four sides by tall rock walls.  The north wall has an archway allowing access to the road.  The ankle high grass waves slightly in the breeze.  You hear the laughter of children at play and the chirping of a few birds.
+
+exits:
+    north: docks_park_road
+npcs:
+    - child
+    - child
+    - villager
+    - bird
+    - bird
+    - bird  

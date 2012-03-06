@@ -1,0 +1,15 @@
+oid: west_docks_distillery
+type: Location
+short_desc: A loud distillery.
+long_desc: >
+  After entering the distillery, you hear steam continously whistle from several valves attached to pipes and large metal stills in the center of the building.  Workers move empty barrels from the southern wall, fill them from spouts attached to the stills, and stack the filled barrels along the eastern wall.  Other workers mix ingredients in small vats and pour them into empty stills.
+  The western wall is covered by guages, levers, and an enormous metal pipe coming up from the floor.  The pipe collects geothermal steam, then directs it to smaller pipes travelling below, around, and through the stills.  The pipes then continue through the roof to release the steam outside.
+
+exits:
+    out: west_docks_tavern
+npcs:
+    - villager
+    - villager
+    - villager
+    - villager
+    - villager

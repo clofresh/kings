@@ -1,0 +1,12 @@
+oid: west_docks_alley
+type: Location
+short_desc: A small alley.
+long_desc: >
+  You are standing in a small, dark alley.  The north and south are blocked by the walls from the buildings on either side.  To the east, you see a road.  The alley bends to the south.
+
+exits:
+    east: west_docks
+    south: cliffs
+npcs:
+    - mouse
+    - mouse

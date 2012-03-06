@@ -2,7 +2,7 @@ oid: waterfront
 type: Location
 short_desc: A bustling waterfront.
 long_desc: >
-  You arrive at a bustling waterfront where the denizens of Nanook work and earn a living.  Stalls filled with the sea's bounty line the streets.  
+  You arrive at a bustling waterfront where the more affluent denizens of Nanook reside.  
 exits:
     west:  town_square
 npcs:
