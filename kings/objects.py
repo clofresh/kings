@@ -2,8 +2,9 @@ import os
 from copy import deepcopy
 from glob import glob
 
-import yaml
 import gevent
+import pkg_resources
+import yaml
 from gevent.queue import Queue
 
 from .common import *
@@ -35,14 +36,15 @@ class Db(object):
         return oid in self.objects
 
     def reload(self):
-        for filename in glob(os.path.join(self.content_path, '*.yaml')):
+        for filename in pkg_resources.resource_listdir('kings', self.content_path):
             self.from_yaml(filename=filename)
 
     def from_yaml(self, oid=None, filename=None):
         assert oid or filename and not (oid and filename)
         if oid:
-            filename = "{0}/{1}.yaml".format(self.content_path, oid)
-        data = yaml.load(open(filename))
+            filename = "{0}.yaml".format(oid)
+        filename = os.path.join(self.content_path, filename)
+        data = yaml.load(pkg_resources.resource_stream('kings', filename))
         cls = globals()[data['type']]
         return cls.init(**data)
 
