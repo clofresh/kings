@@ -1,0 +1,16 @@
+oid: west_docks_warehouse
+type: Location
+short_desc: A fish warehouse.
+long_desc: >
+  The chill air from outside is further cooled by giant blockes of ice lining the windowless walls of the warehouse.  In the dim light, you see workers inspect stacks of crates evenly distributed along the walls.  Additional workers move more crates into the warehouse.  A faint smell of fish and salt come from the crates.
+
+exits:
+    out: west_docks
+npcs:
+    - villager
+    - villager
+    - villager
+    - villager
+    - villager
+    - villager
+    - villager

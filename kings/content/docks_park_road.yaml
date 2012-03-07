@@ -1,0 +1,10 @@
+oid: docks_park_road
+type: Location
+short_desc: The docks.
+long_desc: >
+  The road continues from east to west where you see a few buildings.  The slight breeze carries away the smell of fish wafting in from the east where you see many stalls.  To the north, the shorten docks drop off in a jagged rock cliff that provides a barrier against the crashing waves.  To your south is a small, fenced-in park.  
+
+exits:
+    south: small_park
+    west: west_docks
+    east: docks

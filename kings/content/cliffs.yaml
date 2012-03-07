@@ -2,7 +2,7 @@ oid: cliffs
 type: Location
 short_desc: A steep cliff.
 long_desc: >
-  You arrive at a steep cliff.  The freezing wind whips at you from the cliff's edge.  A flock of birds glide lazily on the frigid updraft. 
+  You arrive at a steep cliff.  Looking up, you see the towering volcano.  The freezing wind whips at you from above.  A flock of birds glide lazily on the frigid updraft. 
 exits:
     east:  town_square
 npcs:

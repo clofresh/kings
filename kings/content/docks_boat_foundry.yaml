@@ -1,0 +1,16 @@
+oid: docks_boat_foundry
+type: Location
+short_desc: A boat foundry.
+long_desc: >
+  As you enter, the chill air is warmed by the heat from the foundry's forge and the brightness from outside is dimmed by the enormous structures' tinted windows along the western and eastern walls.  Several large bay doors span the north wall.  Some workers hammer at a forge at the south wall and others work on the hulls of various sized boats in several stages of construction arranged along the northern, and eastern walls of the structure.
+
+exits:
+    out: docks
+npcs:
+    - villager
+    - villager
+    - villager
+    - villager
+    - villager
+    - villager
+    - villager

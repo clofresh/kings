@@ -1,0 +1,12 @@
+oid: west_docks_bait_shop
+type: Location
+short_desc: A well lit bait and tackle shop.
+long_desc: >
+  You enter a large bait and tackle shop.  The northern wall is covered with different-sized lures, hooks, and odd spools of tackle.  The western wall has several buckets of live bait.  The center of the shop has several isles holding nets, and fishing rods.  Along the southern wall, different harpoons and spears are mounted on display.
+
+exits:
+    out: west_docks
+npcs:
+    - villager
+    - villager
+    - villager

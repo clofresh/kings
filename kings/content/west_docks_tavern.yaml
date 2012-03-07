@@ -1,0 +1,16 @@
+oid: west_docks_tavern
+type: Location
+short_desc: A warm, busy tavern.
+long_desc: >
+  The chill air is immediately dispersed by the warmth of the roaring fire in the large fire pit at the center of the tavern.  The smell of roasted meat and fish thickens the air.  Smoke from the fire drifts upward through an oval hole in the ceiling.
+  Villagers chat, eat, and drink loudly around the fire as they sit on the rough-hewn wooden tables and benches which line the northern and eastern walls.  Small oval windows have been carved into the walls to allow people to peek outside.  A bar covers most of the southern wall.  Near the southeast corner, behind the bar, is a small wooden door.
+
+exits:
+    out: west_docks
+    door: west_docks_distillery
+npcs:
+    - villager
+    - villager
+    - villager
+    - villager
+    - villager

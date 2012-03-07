@@ -2,8 +2,23 @@ oid: docks
 type: Location
 short_desc: The docks.
 long_desc: >
-  The smell of fish overwhelms you as you approach Nanook's docks. 
+  The smell of fish overwhelms you as you approach Nanook's docks.  The road travel through the center of the fish market where numerous fishmongers haggle with customers at their stalls.  
+  Immediately to the east, you see a small road going past a smaller market.  Further north, you hear the sound of hammering coming from the entrance to the boat foundry.  The road continues to the west and bends past a small park.
+
 exits:
     south: town_square
+    east: waterfront
+    west: docks_park_road
+    foundry: docks_boat_foundry
 npcs:
+    - villager
+    - villager
+    - villager
+    - villager
+    - villager
     - mouse
+    - mouse
+    - mouse
+    - bird
+    - bird
+    - cat
