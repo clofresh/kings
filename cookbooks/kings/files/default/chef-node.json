@@ -1,0 +1,8 @@
+{
+  "run_list": [ 
+    "recipe[kings]",
+    "recipe[kings::system]",
+    "recipe[kings::build]",
+    "recipe[kings::kings]"
+  ]
+}

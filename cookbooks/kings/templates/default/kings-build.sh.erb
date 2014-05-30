@@ -1,0 +1,23 @@
+#!/bin/bash -xe
+
+# Read the latest build number from file
+BUILD_NUMBER_FILE="<%= @kings_build_number %>"
+export BUILD_NUMBER=$(cat "$BUILD_NUMBER_FILE")
+
+# Go to the git checkout, make sure it's clean and up to date, and build the egg 
+cd "<%= @kings_repo_dir %>"
+git stash
+git checkout master
+git pull
+rake clean build
+
+# Update the build number
+echo $(($BUILD_NUMBER + 1)) > "$BUILD_NUMBER_FILE"
+
+# Deploy the egg to the virtualenv
+source <%= @kings_virtualenv %>/bin/activate
+easy_install -U dist/*.egg
+
+# Restart the server
+sudo supervisorctl restart kings
+

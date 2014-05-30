@@ -1,0 +1,33 @@
+[kings]
+bind_address=0.0.0.0
+port=<%= @kings_port %>
+content_path=content
+
+[loggers]
+keys=root,kings
+
+[handlers]
+keys=std
+
+[formatters]
+keys=std
+
+[logger_root]
+level=NOTSET
+handlers=std
+
+[logger_kings]
+level=DEBUG
+handlers=std
+propagate=0
+qualname=kings
+
+[handler_std]
+class=StreamHandler
+formatter=std
+args=(sys.stderr,)
+
+[formatter_std]
+format=%(asctime)s %(levelname)s %(message)s
+dateformat=%Y-%M-%D %H:%I:%S
+

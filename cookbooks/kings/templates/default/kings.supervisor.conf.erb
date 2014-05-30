@@ -1,0 +1,9 @@
+[program:kings]
+command=<%= @kings_bin %> -c <%= @kings_config %> 
+autostart=true
+autorestart=unexpected
+user=<%= @kings_user %>
+redirect_stderr=true
+stdout_logfile=<%= @kings_log %>
+
+
